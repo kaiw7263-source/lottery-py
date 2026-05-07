@@ -5,11 +5,9 @@ import requests
 st.set_page_config(page_title="AI彩票演算工具", layout="centered")
 st.title("🎲 AI彩票演算｜开奖+技巧选号+最多5注")
 
-# 初始化历史
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# 获取最新开奖
 @st.cache_data(ttl=300)
 def get_lottery():
     headers = {"User‑Agent":"Mozilla/5.0"}
@@ -23,13 +21,11 @@ def get_lottery():
     except:
         return {"ssq":"获取失败","dlt":"获取失败"}
 
-# 显示开奖
-st.subheader("📢 最新开奖号码")
 data = get_lottery()
+st.subheader("📢 最新开奖号码")
 st.success("🔴 双色球：" + data["ssq"])
 st.success("🟢 大乐透：" + data["dlt"])
 
-# 选号技巧说明
 tips = """
 ✅ AI使用选号技巧（最多5注）：
 1. 大小比均衡（大小号各一半）
@@ -40,7 +36,6 @@ tips = """
 """
 st.info(tips)
 
-# 双色球 AI演算 最多5注
 st.subheader("🔴 双色球 AI演算（1–5注）")
 num_ssq = st.slider("生成注数", min_value=1, max_value=5, value=3)
 if st.button("AI演算双色球"):
@@ -52,7 +47,6 @@ if st.button("AI演算双色球"):
         st.success(res)
         st.session_state.history.append(res)
 
-# 大乐透 AI演算 最多5注
 st.subheader("🟢 大乐透 AI演算（1–5注）")
 num_dlt = st.slider("生成注数", min_value=1, max_value=5, value=3, key="dlt")
 if st.button("AI演算大乐透"):
@@ -65,7 +59,6 @@ if st.button("AI演算大乐透"):
         st.success(res)
         st.session_state.history.append(res)
 
-# 历史记录
 st.subheader("📋 生成历史")
 if st.session_state.history:
     for item in reversed(st.session_state.history):
@@ -74,4 +67,3 @@ if st.session_state.history:
         st.session_state.history.clear()
 else:
     st.info("暂无记录")
-
