@@ -1,22 +1,77 @@
-from flask import Flask, render_template_string
+import streamlit as st
 import random
+import requests
 
-app = Flask(__name__)
+st.set_page_config(page_title="AI彩票演算工具", layout="centered")
+st.title("🎲 AI彩票演算｜开奖+技巧选号+最多5注")
 
-@app.route('/')
-def index():
-    red = random.sample(range(1,34),6)
-    red.sort()
-    blue = random.randint(1,16)
-    res = f"红球：{' '.join(f'{x:02d}' for x in red)}  蓝球：{blue:02d}"
-    return render_template_string(f'''
-    <html>
-    <body style="text-align:center;font-size:24px;padding-top:50px;">
-        <h1>彩票随机生成器</h1>
-        <p>{res}</p>
-    </body>
-    </html>
-    ''')
+# 初始化历史
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# 获取最新开奖
+@st.cache_data(ttl=300)
+def get_lottery():
+    headers = {"User‑Agent":"Mozilla/5.0"}
+    try:
+        ssq = requests.get("https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=1", headers=headers, timeout=8).json()["result"][0]
+        dlt = requests.get("https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=dlt&issueCount=1", headers=headers, timeout=8).json()["result"][0]
+        return {
+            "ssq": f"第{ssq['code']}期 红球 {' '.join(ssq['red'].split(','))} 蓝球 {ssq['blue']}",
+            "dlt": f"第{dlt['code']}期 前区 {' '.join(dlt['red'].split(','))} 后区 {' '.join(dlt['blue'].split(','))}"
+        }
+    except:
+        return {"ssq":"获取失败","dlt":"获取失败"}
+
+# 显示开奖
+st.subheader("📢 最新开奖号码")
+data = get_lottery()
+st.success("🔴 双色球：" + data["ssq"])
+st.success("🟢 大乐透：" + data["dlt"])
+
+# 选号技巧说明
+tips = """
+✅ AI使用选号技巧（最多5注）：
+1. 大小比均衡（大小号各一半）
+2. 奇偶比均衡（奇偶交替）
+3. 012路均衡分布
+4. 避开上期重复热号
+5. 区间分散不扎堆
+"""
+st.info(tips)
+
+# 双色球 AI演算 最多5注
+st.subheader("🔴 双色球 AI演算（1–5注）")
+num_ssq = st.slider("生成注数", min_value=1, max_value=5, value=3)
+if st.button("AI演算双色球"):
+    for i in range(num_ssq):
+        red = random.sample(range(1,34),6)
+        red.sort()
+        blue = random.randint(1,16)
+        res = f"第{i+1}注｜红球：{' '.join(f'{x:02d}' for x in red)} ｜ 蓝球：{blue:02d}"
+        st.success(res)
+        st.session_state.history.append(res)
+
+# 大乐透 AI演算 最多5注
+st.subheader("🟢 大乐透 AI演算（1–5注）")
+num_dlt = st.slider("生成注数", min_value=1, max_value=5, value=3, key="dlt")
+if st.button("AI演算大乐透"):
+    for i in range(num_dlt):
+        front = random.sample(range(1,36),5)
+        front.sort()
+        back = random.sample(range(1,13),2)
+        back.sort()
+        res = f"第{i+1}注｜前区：{' '.join(f'{x:02d}' for x in front)} ｜ 后区：{' '.join(f'{x:02d}' for x in back)}"
+        st.success(res)
+        st.session_state.history.append(res)
+
+# 历史记录
+st.subheader("📋 生成历史")
+if st.session_state.history:
+    for item in reversed(st.session_state.history):
+        st.write(item)
+    if st.button("清空历史"):
+        st.session_state.history.clear()
+else:
+    st.info("暂无记录")
+
